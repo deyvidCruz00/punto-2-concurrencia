@@ -146,18 +146,16 @@ class WorkerThreadSeguro(threading.Thread):
     def run(self):
         print(f"[{self.name}] [{timestamp()}] Iniciado")
         
-        for i, (operacion, producto_id, cantidad) in enumerate(self.operaciones, 1):
-            print(f"\n[{self.name}] [{timestamp()}] Operación {i}/5: {operacion}({producto_id}, {cantidad})")
-            
-            if operacion == "vender":
-                self.inventario.vender(producto_id, cantidad, self.name)
-            elif operacion == "reabastecer":
-                self.inventario.reabastecer(producto_id, cantidad, self.name)
-            
-            # Pequeña pausa entre operaciones del mismo thread
-            time.sleep(0.01)
+        # Cada thread ejecuta UNA sola operación
+        operacion, producto_id, cantidad = self.operaciones[0]
+        print(f"\n[{self.name}] [{timestamp()}] Operación: {operacion}({producto_id}, {cantidad})")
         
-        print(f"[{self.name}] [{timestamp()}] Finalizado - 5 operaciones completadas")
+        if operacion == "vender":
+            self.inventario.vender(producto_id, cantidad, self.name)
+        elif operacion == "reabastecer":
+            self.inventario.reabastecer(producto_id, cantidad, self.name)
+        
+        print(f"[{self.name}] [{timestamp()}] Finalizado - 1 operación completada")
 
 def ejecutar_simulacion_segura(ejecucion_num):
     """Ejecuta una simulación completa del sistema de inventario SIN race conditions"""
@@ -172,35 +170,35 @@ def ejecutar_simulacion_segura(ejecucion_num):
     print(f"\n=== ESTADO INICIAL ===")
     inventario.mostrar_inventario()
     
-    # Misma secuencia de operaciones que la versión CON race condition
+    # Secuencia de operaciones según documento - CADA THREAD EJECUTA UNA OPERACIÓN ÚNICA
     operaciones_threads = [
-        # Threads 1-5: Operaciones de VENTA
-        [("vender", 0, 10), ("vender", 1, 15), ("vender", 2, 20), ("vender", 3, 5), ("vender", 4, 25)],     # Thread 1
-        [("vender", 0, 10), ("vender", 1, 15), ("vender", 2, 20), ("vender", 3, 5), ("vender", 4, 25)],     # Thread 2  
-        [("vender", 0, 10), ("vender", 1, 15), ("vender", 2, 20), ("vender", 3, 5), ("vender", 4, 25)],     # Thread 3
-        [("vender", 0, 10), ("vender", 1, 15), ("vender", 2, 20), ("vender", 3, 5), ("vender", 4, 25)],     # Thread 4
-        [("vender", 0, 10), ("vender", 1, 15), ("vender", 2, 20), ("vender", 3, 5), ("vender", 4, 25)],     # Thread 5
+        # Threads 1-5: Operaciones de VENTA (cada thread vende de UN producto diferente)
+        [("vender", 0, 10)],      # Thread 1: Solo vende Producto 0
+        [("vender", 1, 15)],      # Thread 2: Solo vende Producto 1
+        [("vender", 2, 20)],      # Thread 3: Solo vende Producto 2
+        [("vender", 3, 5)],       # Thread 4: Solo vende Producto 3
+        [("vender", 4, 25)],      # Thread 5: Solo vende Producto 4
         
-        # Threads 6-10: Operaciones de REABASTECIMIENTO  
-        [("reabastecer", 0, 30), ("reabastecer", 1, 20), ("reabastecer", 2, 40), ("reabastecer", 3, 10), ("reabastecer", 4, 35)],  # Thread 6
-        [("reabastecer", 0, 30), ("reabastecer", 1, 20), ("reabastecer", 2, 40), ("reabastecer", 3, 10), ("reabastecer", 4, 35)],  # Thread 7
-        [("reabastecer", 0, 30), ("reabastecer", 1, 20), ("reabastecer", 2, 40), ("reabastecer", 3, 10), ("reabastecer", 4, 35)],  # Thread 8
-        [("reabastecer", 0, 30), ("reabastecer", 1, 20), ("reabastecer", 2, 40), ("reabastecer", 3, 10), ("reabastecer", 4, 35)],  # Thread 9
-        [("reabastecer", 0, 30), ("reabastecer", 1, 20), ("reabastecer", 2, 40), ("reabastecer", 3, 10), ("reabastecer", 4, 35)],  # Thread 10
+        # Threads 6-10: Operaciones de REABASTECIMIENTO (cada thread reabastece UN producto diferente)
+        [("reabastecer", 0, 30)],  # Thread 6: Solo reabastece Producto 0
+        [("reabastecer", 1, 20)],  # Thread 7: Solo reabastece Producto 1
+        [("reabastecer", 2, 40)],  # Thread 8: Solo reabastece Producto 2
+        [("reabastecer", 3, 10)],  # Thread 9: Solo reabastece Producto 3
+        [("reabastecer", 4, 35)],  # Thread 10: Solo reabastece Producto 4
         
-        # Threads 11-15: Operaciones de VENTA (productos 5-9)
-        [("vender", 5, 15), ("vender", 6, 20), ("vender", 7, 10), ("vender", 8, 25), ("vender", 9, 15)],     # Thread 11
-        [("vender", 5, 15), ("vender", 6, 20), ("vender", 7, 10), ("vender", 8, 25), ("vender", 9, 15)],     # Thread 12
-        [("vender", 5, 15), ("vender", 6, 20), ("vender", 7, 10), ("vender", 8, 25), ("vender", 9, 15)],     # Thread 13
-        [("vender", 5, 15), ("vender", 6, 20), ("vender", 7, 10), ("vender", 8, 25), ("vender", 9, 15)],     # Thread 14
-        [("vender", 5, 15), ("vender", 6, 20), ("vender", 7, 10), ("vender", 8, 25), ("vender", 9, 15)],     # Thread 15
+        # Threads 11-15: Operaciones de VENTA (productos 5-9, cada thread vende de UN producto)
+        [("vender", 5, 15)],      # Thread 11: Solo vende Producto 5
+        [("vender", 6, 20)],      # Thread 12: Solo vende Producto 6
+        [("vender", 7, 10)],      # Thread 13: Solo vende Producto 7
+        [("vender", 8, 25)],      # Thread 14: Solo vende Producto 8
+        [("vender", 9, 15)],      # Thread 15: Solo vende Producto 9
         
-        # Threads 16-20: Operaciones de REABASTECIMIENTO (productos 5-9)
-        [("reabastecer", 5, 25), ("reabastecer", 6, 30), ("reabastecer", 7, 15), ("reabastecer", 8, 40), ("reabastecer", 9, 20)],  # Thread 16
-        [("reabastecer", 5, 25), ("reabastecer", 6, 30), ("reabastecer", 7, 15), ("reabastecer", 8, 40), ("reabastecer", 9, 20)],  # Thread 17
-        [("reabastecer", 5, 25), ("reabastecer", 6, 30), ("reabastecer", 7, 15), ("reabastecer", 8, 40), ("reabastecer", 9, 20)],  # Thread 18
-        [("reabastecer", 5, 25), ("reabastecer", 6, 30), ("reabastecer", 7, 15), ("reabastecer", 8, 40), ("reabastecer", 9, 20)],  # Thread 19
-        [("reabastecer", 5, 25), ("reabastecer", 6, 30), ("reabastecer", 7, 15), ("reabastecer", 8, 40), ("reabastecer", 9, 20)]   # Thread 20
+        # Threads 16-20: Operaciones de REABASTECIMIENTO (productos 5-9, cada thread reabastece UN producto)
+        [("reabastecer", 5, 25)],  # Thread 16: Solo reabastece Producto 5
+        [("reabastecer", 6, 30)],  # Thread 17: Solo reabastece Producto 6
+        [("reabastecer", 7, 15)],  # Thread 18: Solo reabastece Producto 7
+        [("reabastecer", 8, 40)],  # Thread 19: Solo reabastece Producto 8
+        [("reabastecer", 9, 20)]   # Thread 20: Solo reabastece Producto 9
     ]
     
     print(f"\n=== MECANISMO DE SINCRONIZACIÓN ===")
